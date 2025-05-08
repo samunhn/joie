@@ -25,7 +25,6 @@ void setup() {
   pinMode(A5, INPUT);pinMode(4, INPUT);pinMode(2, INPUT);pinMode(1, INPUT);pinMode(0, INPUT);
 }
 
-//first loop 
 //void loop() {
 //   while (digitalRead(Start) == HIGH) {
 //     xmotion.UserLed2(80);
@@ -93,7 +92,7 @@ void QTICheck(){
 bool EdgeDetected(){
   if ((QTIvalue[0] == 1)||(QTIvalue[1] == 1)||(QTIvalue[2] == 1)){
     TOL = millis(); //Record line detection time
-    xmotion.Backward(100, 200); //Move backward
+    xmotion.Backward(100, 500); //Move backward
     return true; //Line detected
     } else {
     return false; //No line detected
@@ -145,7 +144,7 @@ void IRCheck(){
 void OpponentTracking(int LeftSensor, int LeftDiagonalSensor, int MiddleSensor, int RightDiagonalSensor, int RightSensor){
   int trackingDuration = 20; //Duration of tracking movements
   int trackingTurnSpeed = 90; //Speed of tracking turns
-  int trackingForwardSpeed = 120; //Speed of forward tracking
+  int trackingForwardSpeed = 110; //Speed of forward tracking
   int continueLastSpeed = 40; //Speed when continuing last known direction
 
   if (MiddleSensor == 1 ) {
@@ -168,7 +167,7 @@ void OpponentTracking(int LeftSensor, int LeftDiagonalSensor, int MiddleSensor, 
     xmotion.ArcTurn(trackingForwardSpeed + 40, trackingForwardSpeed - 40, trackingDuration); //Arc turn right
     LastValue = 1; //Opponent diagonally right
   } else if (LastValue == 0) {
-    xmotion.Forward(trackingForwardSpeed - 20, trackingDuration); //Continue forward
+    xmotion.Forward(trackingForwardSpeed * 0.4, trackingDuration); //Continue forward
   } else if (LastValue == 1) {
     xmotion.Right0(continueLastSpeed, trackingDuration); //Continue turning right
   } else if (LastValue == 2) {
