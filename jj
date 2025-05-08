@@ -1,0 +1,143 @@
+#include <xmotion.h>
+
+int Start = 10;
+
+int QTI[] = {A4, A2, A1};
+int QTIvalue[] = {0, 0, 0}; //0 = black, 1 = white
+#define lineThreshhold 200
+
+int IR[] = {A5, 4, 2, 1, 0};
+int IRvalue[] = {0, 0, 0, 0,1};
+int LastValue = 0;
+
+long currentTime;
+long TOL = 0; //TimeOfLastLineDetection
+#define timeBetweenLineRecognition 200
+bool timePassed = true;
+
+String space = " ";
+
+void setup() {
+  pinMode(Start, INPUT_PULLUP);
+  Serial.begin(9600);
+  pinMode(A4,INPUT);pinMode(A2,INPUT);pinMode(A1,INPUT);
+  pinMode(A5, INPUT);pinMode(4, INPUT);pinMode(2, INPUT);pinMode(1, INPUT);pinMode(0, INPUT);
+}
+
+void loop() {
+   while (digitalRead(Start) == 0) {
+     xmotion.UserLed2(80);
+   }
+   xmotion.CounterLeds(990, 5);
+
+   while (true) {
+    currentTime = millis();
+    QTICheck(); //Read line sensor values
+    IRCheck();  //Read opponent sensor values
+    Serial.println(QTIvalue[0] + space + QTIvalue[1] + space + QTIvalue[2]);
+    bool lineDetected = EdgeDetected(); //Check for line detection
+
+  if (lineDetected && (currentTime - TOL >= timeBetweenLineRecognition)) {
+     Movement(QTIvalue[0], QTIvalue[1], QTIvalue[2]); //Handle line avoidance
+     delay(20);
+    } else {
+      OpponentTracking(IRvalue[0], IRvalue[1], IRvalue[2], IRvalue[3], IRvalue[4]); //Handle opponent tracking
+      }
+    }
+}
+
+void QTICheck(){
+  for (int i = 0; i < 3; i++){
+    if ((analogRead(QTI[i])) <= lineThreshhold){
+      QTIvalue[i] = 1; //Line detected (black)
+      } else {
+        QTIvalue[i] = 0; //No line (white)
+    }
+  }
+}
+
+bool EdgeDetected(){
+  if ((QTIvalue[0] == 1)||(QTIvalue[1] == 1)||(QTIvalue[2] == 1)){
+    TOL = millis(); //Record line detection time
+    xmotion.Backward(100, 200); //Move backward
+    return true; //Line detected
+    } else {
+    return false; //No line detected
+  }
+}
+
+void Movement(int left_line_sensor, int middle_line_sensor, int right_line_sensor){
+  if (timePassed == true){
+    if ((left_line_sensor == 1) && (middle_line_sensor == 1) && (right_line_sensor == 1)){
+      xmotion.Backward(50,100);
+      xmotion.Right0(60,160);xmotion.Left0(10,10); //Approx. 180 degree turn
+    }
+    else if ((left_line_sensor == 1) && (middle_line_sensor == 0) && (right_line_sensor == 1)){
+      xmotion.Backward(50,100);
+      xmotion.Right0(60,160);xmotion.Left0(10,10); //Approx. 180 degree turn
+      }
+      else if ((left_line_sensor == 1) && (middle_line_sensor == 0) && (right_line_sensor == 0)){
+      xmotion.Right0(70, 120); //Turn right
+      xmotion.Left0(40,120);
+      }
+      else if ((left_line_sensor == 0) && (middle_line_sensor == 0) && (right_line_sensor == 1)){
+      xmotion.Left0(70,120); //Turn left
+      xmotion.Right0(40, 120);
+      }
+      else if ((left_line_sensor == 1) && (middle_line_sensor == 1) && (right_line_sensor == 0)){
+      xmotion.Right0(60,150);xmotion.Left0(50,10);
+      }
+      else if ((left_line_sensor == 0) && (middle_line_sensor == 1) && (right_line_sensor == 1)){
+      xmotion.Left0(60,150);xmotion.Right0(50,10);
+      }
+      else if ((left_line_sensor == 0) && (middle_line_sensor == 1) && (right_line_sensor == 0)){
+      xmotion.Backward(50,100);
+      xmotion.Right0(50,160);
+      }
+      xmotion.StopMotors(1);
+      timePassed = false;
+      }
+      else if (currentTime - TOL >= timeBetweenLineRecognition){
+     timePassed = true;
+   }
+}
+
+void IRCheck(){
+  for (int i = 0; i < 5; i++){
+    IRvalue[i] = digitalRead(IR[i]); //Read IR sensor values
+  }
+}
+
+void OpponentTracking(int LeftSensor, int LeftDiagonalSensor, int MiddleSensor, int RightDiagonalSensor, int RightSensor){
+  int trackingDuration = 20; //Duration of tracking movements
+  int trackingTurnSpeed = 90; //Speed of tracking turns
+  int trackingForwardSpeed = 120; //Speed of forward tracking
+  int continueLastSpeed = 40; //Speed when continuing last known direction
+
+  if (MiddleSensor == 1 ) {
+    xmotion.Forward(trackingForwardSpeed, trackingDuration); //Move forward towards opponent
+    LastValue = 0; //Opponent straight ahead
+  }
+  else if (RightSensor == 1) {
+    xmotion.Right0(trackingTurnSpeed, trackingDuration); //Turn right towards opponent
+    LastValue = 1; //Opponent on the right
+    }
+  else if (LeftSensor == 1) {
+    xmotion.Left0(trackingTurnSpeed, trackingDuration); //Turn left towards opponent
+    LastValue = 2; //Opponent on the left
+  }
+  else if (LeftDiagonalSensor == 1) {
+    xmotion.ArcTurn(trackingForwardSpeed - 40, trackingForwardSpeed + 40, trackingDuration); //Arc turn left
+    LastValue = 2; //Opponent diagonally left
+  }
+   else if (RightDiagonalSensor == 1) {
+    xmotion.ArcTurn(trackingForwardSpeed + 40, trackingForwardSpeed - 40, trackingDuration); //Arc turn right
+    LastValue = 1; //Opponent diagonally right
+  } else if (LastValue == 0) {
+    xmotion.Forward(trackingForwardSpeed - 20, trackingDuration); //Continue forward
+  } else if (LastValue == 1) {
+    xmotion.Right0(continueLastSpeed, trackingDuration); //Continue turning right
+  } else if (LastValue == 2) {
+    xmotion.Left0(continueLastSpeed, trackingDuration); //Continue turning left
+  }
+}
