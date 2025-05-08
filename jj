@@ -14,6 +14,7 @@ long currentTime;
 long TOL = 0; //TimeOfLastLineDetection
 #define timeBetweenLineRecognition 200
 bool timePassed = true;
+bool edgeJustDetected = false;
 
 String space = " ";
 
@@ -24,26 +25,59 @@ void setup() {
   pinMode(A5, INPUT);pinMode(4, INPUT);pinMode(2, INPUT);pinMode(1, INPUT);pinMode(0, INPUT);
 }
 
+//first loop 
+//void loop() {
+//   while (digitalRead(Start) == HIGH) {
+//     xmotion.UserLed2(80);
+//   }
+//   xmotion.CounterLeds(990, 5);
+//
+//   while (true) {
+//    currentTime = millis();
+//    QTICheck(); //Read line sensor values
+//    IRCheck();  //Read opponent sensor values
+//    Serial.println(QTIvalue[0] + space + QTIvalue[1] + space + QTIvalue[2]);
+//    bool lineDetected = EdgeDetected(); //Check for line detection
+//
+// if (lineDetected && (currentTime - TOL >= timeBetweenLineRecognition)) {
+//    Movement(QTIvalue[0], QTIvalue[1], QTIvalue[2]); //Handle line avoidance
+//     delay(20);
+//    } else {
+//
+//    } if{
+//      OpponentTracking(IRvalue[0], IRvalue[1], IRvalue[2], IRvalue[3], IRvalue[4]); //Handle opponent tracking
+//      }
+//    }
+//}
+
 void loop() {
-   while (digitalRead(Start) == 0) {
-     xmotion.UserLed2(80);
-   }
-   xmotion.CounterLeds(990, 5);
-
-   while (true) {
+  while (digitalRead(Start) == HIGH) // Button push is waited. When Button is pushed, it gives 0 value.
+  {
+    xmotion.UserLed2(80); // Blink User Led 2 80ms
+  }
+  delay (50);
+  xmotion.CounterLeds(980, 5); //4900ms timer
+  while (true){
     currentTime = millis();
-    QTICheck(); //Read line sensor values
-    IRCheck();  //Read opponent sensor values
+    QTICheck();
+    IRCheck();
+//  xmotion.Forward(30,200);
+//  xmotion.Backward(MOTORPOWER,30);
+//  xmotion.Right0(MOTORPOWER,190);xmotion.Left0(MOTORPOWER,20);
+//  xmotion.StopMotors(MOTORPOWER00);
     Serial.println(QTIvalue[0] + space + QTIvalue[1] + space + QTIvalue[2]);
-    bool lineDetected = EdgeDetected(); //Check for line detection
+    EdgeDetected();
+    Movement(QTIvalue[0],QTIvalue[1], QTIvalue[2]);
+    if(edgeJustDetected)
+  {
 
-  if (lineDetected && (currentTime - TOL >= timeBetweenLineRecognition)) {
-     Movement(QTIvalue[0], QTIvalue[1], QTIvalue[2]); //Handle line avoidance
-     delay(20);
-    } else {
-      OpponentTracking(IRvalue[0], IRvalue[1], IRvalue[2], IRvalue[3], IRvalue[4]); //Handle opponent tracking
-      }
-    }
+  } else {
+    if (QTIvalue[0] == 0 && QTIvalue[1] == 0){
+    //xmotion.Forward(30,1);
+     OpponentTracking(IRvalue[0], IRvalue[1], IRvalue[2], IRvalue[3], IRvalue[4]); //Handle opponent tracking
+     }
+   }
+  }
 }
 
 void QTICheck(){
